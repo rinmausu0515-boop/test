@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cyber Break Out Mobile</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: none; /* Prevents scroll and zoom on touch devices */
+        }
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #030308;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            padding: 0;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .glow-cyan {
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.8), 0 0 20px rgba(0, 243, 255, 0.4);
+        }
+        .glow-pink {
+            text-shadow: 0 0 10px rgba(255, 0, 127, 0.8), 0 0 20px rgba(255, 0, 127, 0.4);
+        }
+        .box-glow-cyan {
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4), inset 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+        .btn-cyber {
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.25) 0%, rgba(255, 0, 127, 0.25) 100%);
+            border: 2px solid #00f3ff;
+            transition: transform 0.1s ease, background 0.2s ease;
+        }
+        .btn-cyber:active {
+            transform: scale(0.96);
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.5) 0%, rgba(255, 0, 127, 0.5) 100%);
+        }
+        /* Mobile Touch Pad Overlay Effect */
+        .touch-pad-bg {
+            background: radial-gradient(circle, rgba(0, 243, 255, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%);
+        }
+    </style>
+</head>
+<body class="flex flex-col h-full w-full justify-between items-center bg-slate-950 select-none">
+
+    <!-- Top HUD (Header) -->
+    <header class="w-full bg-slate-900/90 border-b border-cyan-500/30 px-3 py-2 flex justify-between items-center z-20 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div>
+                <span class="text-cyan-400 font-bold block text-[9px] uppercase">SCORE</span>
+                <span id="scoreText" class="font-orbitron text-base sm:text-xl font-bold text-white">0</span>
+            </div>
+            <div>
+                <span class="text-purple-400 font-bold block text-[9px] uppercase">HIGH</span>
+                <span id="highScoreText" class="font-orbitron text-base sm:text-xl font-bold text-purple-300">0</span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <div>
+                <span class="text-pink-400 font-bold block text-[9px] uppercase">STAGE</span>
+                <span id="stageText" class="font-orbitron text-base sm:text-xl font-bold text-pink-400">1</span>
+            </div>
+            <div>
+                <span class="text-yellow-400 font-bold block text-[9px] uppercase">LIFE</span>
+                <div id="livesContainer" class="flex space-x-1 text-yellow-400 text-xs sm:text-sm">
+                    <i class="fa-solid fa-heart"></i>
+                    <i class="fa-solid fa-heart"></i>
+                    <i class="fa-solid fa-heart"></i>
+                </div>
+            </div>
+            <!-- Pause & Sound Controls -->
+            <button id="pauseBtn" class="text-gray-300 hover:text-cyan-400 text-lg px-1 active:scale-95">
+                <i id="pauseIcon" class="fa-solid fa-pause"></i>
+            </button>
+            <button id="soundToggleBtn" class="text-gray-300 hover:text-cyan-400 text-lg px-1 active:scale-95">
+                <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Canvas Container -->
+    <main id="canvasWrapper" class="relative w-full flex-1 bg-black flex items-center justify-center overflow-hidden">
+        <canvas id="gameCanvas" class="block w-full h-full"></canvas>
+
+        <!-- Start / Title Overlay -->
+        <div id="startOverlay" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center z-30">
+            <h1 class="font-orbitron text-3xl sm:text-5xl font-black mb-2 tracking-wider glow-cyan">
+                CYBER<span class="text-pink-500 glow-pink">BREAK</span>
+            </h1>
+            <p class="text-cyan-400 text-xs sm:text-sm mb-4">MOBILE EDITION</p>
+
+            <div class="bg-slate-900/80 border border-cyan-500/30 rounded-xl p-3 mb-6 max-w-xs w-full text-left text-xs space-y-2">
+                <p class="text-pink-400 font-bold"><i class="fa-solid fa-mobile-screen mr-1"></i>操作方法:</p>
+                <p class="text-gray-300">・画面全体を指で左右にスワイプ／ドラッグ</p>
+                <p class="text-gray-300">・画面下部ボタンまたはタップでレーザー発射</p>
+                <div class="flex flex-wrap gap-1 pt-1 text-[10px]">
+                    <span class="bg-cyan-900/60 text-cyan-300 border border-cyan-500/40 px-1.5 py-0.5 rounded">W: パドル拡大</span>
+                    <span class="bg-pink-900/60 text-pink-300 border border-pink-500/40 px-1.5 py-0.5 rounded">M: 3ボール</span>
+                    <span class="bg-green-900/60 text-green-300 border border-green-500/40 px-1.5 py-0.5 rounded">L: レーザー</span>
+                    <span class="bg-yellow-900/60 text-yellow-300 border border-yellow-500/40 px-1.5 py-0.5 rounded">S: 貫通弾</span>
+                </div>
+            </div>
+
+            <button id="startBtn" class="btn-cyber font-orbitron px-8 py-3 rounded-xl text-lg font-bold tracking-wider text-white shadow-lg">
+                <i class="fa-solid fa-play mr-2"></i>GAME START
+            </button>
+        </div>
+
+        <!-- Game Over / Stage Clear Overlay -->
+        <div id="gameOverOverlay" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center z-30 hidden">
+            <h2 id="gameOverTitle" class="font-orbitron text-3xl sm:text-4xl font-black mb-2 text-red-500 glow-pink">
+                GAME OVER
+            </h2>
+            <p id="gameOverSub" class="text-gray-300 text-xs sm:text-sm mb-4">システムがダウンしました。</p>
+
+            <div class="bg-slate-900/80 border border-cyan-500/30 rounded-xl p-4 mb-6 w-full max-w-xs space-y-2">
+                <div class="flex justify-between items-center text-xs sm:text-sm">
+                    <span class="text-gray-400">最終スコア:</span>
+                    <span id="finalScore" class="font-orbitron text-lg font-bold text-cyan-400">0</span>
+                </div>
+                <div class="flex justify-between items-center text-xs sm:text-sm">
+                    <span class="text-gray-400">到達ステージ:</span>
+                    <span id="finalStage" class="font-orbitron text-lg font-bold text-pink-400">1</span>
+                </div>
+                <div id="newHighContainer" class="hidden text-xs bg-yellow-500/20 text-yellow-300 py-1 rounded border border-yellow-500/50 font-bold animate-pulse">
+                    <i class="fa-solid fa-trophy mr-1"></i> NEW HIGH SCORE!
+                </div>
+            </div>
+
+            <button id="restartBtn" class="btn-cyber font-orbitron px-8 py-3 rounded-xl text-lg font-bold tracking-wider text-white">
+                <i class="fa-solid fa-rotate-right mr-2"></i>RETRY
+            </button>
+        </div>
+
+        <!-- Pause Overlay -->
+        <div id="pauseOverlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center z-30 hidden">
+            <h2 class="font-orbitron text-3xl font-bold mb-4 text-cyan-400 glow-cyan">PAUSED</h2>
+            <button id="resumeBtn" class="btn-cyber font-orbitron px-6 py-2.5 rounded-xl text-base font-bold text-white mb-3">
+                <i class="fa-solid fa-play mr-2"></i>RESUME
+            </button>
+        </div>
+    </main>
+
+    <!-- Bottom Mobile Touch Controls Bar -->
+    <footer class="w-full bg-slate-900/95 border-t border-cyan-500/30 p-2 flex justify-between items-center z-20 shrink-0 touch-pad-bg">
+        <!-- Touch Move Buttons -->
+        <div class="flex space-x-2 w-1/2">
+            <button id="btnLeft" class="flex-1 py-3 bg-slate-800/80 border border-cyan-500/40 rounded-lg text-cyan-400 text-xl active:bg-cyan-500/30 active:scale-95 transition">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <button id="btnRight" class="flex-1 py-3 bg-slate-800/80 border border-cyan-500/40 rounded-lg text-cyan-400 text-xl active:bg-cyan-500/30 active:scale-95 transition">
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- Touch Fire Laser Button -->
+        <div class="w-1/2 pl-2">
+            <button id="btnFire" class="w-full py-3 bg-pink-900/40 border border-pink-500/50 rounded-lg text-pink-400 text-sm font-bold active:bg-pink-500/40 active:scale-95 transition flex items-center justify-center">
+                <i class="fa-solid fa-crosshairs mr-1 text-base"></i> FIRE
+            </button>
+        </div>
+    </footer>
+
+    <!-- JavaScript Audio & Logic Engine -->
+    <script>
+        // --- Web Audio API Synthesizer ---
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playTone(freq, type = 'sine', duration = 0.08, vol = 0.1) {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (e) {}
+            }
+
+            playHitPaddle() { this.playTone(320, 'triangle', 0.08, 0.15); }
+            playHitBlock(pitchOffset = 0) { this.playTone(480 + pitchOffset, 'sine', 0.08, 0.12); }
+            playPowerup() {
+                if (!this.enabled || !this.ctx) return;
+                [350, 450, 600, 800].forEach((f, idx) => {
+                    setTimeout(() => this.playTone(f, 'sine', 0.08, 0.15), idx * 40);
+                });
+            }
+            playLaser() {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(900, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.12);
+                    gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.12);
+                } catch (e) {}
+            }
+            playExplosion() { this.playTone(100, 'sawtooth', 0.2, 0.2); }
+            playGameOver() {
+                if (!this.enabled || !this.ctx) return;
+                [220, 160, 110].forEach((f, idx) => {
+                    setTimeout(() => this.playTone(f, 'sawtooth', 0.2, 0.2), idx * 150);
+                });
+            }
+        }
+
+        const sound = new SoundEngine();
+
+        // --- Canvas & Scaling Logic ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+
+        // Internal resolution (Aspect Ratio 4:3 or Dynamic Width)
+        const CANVAS_WIDTH = 600;
+        const CANVAS_HEIGHT = 800;
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        // Game Variables
+        let score = 0;
+        let highScore = localStorage.getItem('cyberbreakout_mobile_high') || 0;
+        let lives = 3;
+        let stage = 1;
+        let isGaming = false;
+        let isPaused = false;
+
+        // UI Elements
+        const scoreEl = document.getElementById('scoreText');
+        const highScoreEl = document.getElementById('highScoreText');
+        const stageEl = document.getElementById('stageText');
+        const livesEl = document.getElementById('livesContainer');
+        const startOverlay = document.getElementById('startOverlay');
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        const pauseOverlay = document.getElementById('pauseOverlay');
+        const gameOverTitle = document.getElementById('gameOverTitle');
+        const gameOverSub = document.getElementById('gameOverSub');
+        const finalScoreEl = document.getElementById('finalScore');
+        const finalStageEl = document.getElementById('finalStage');
+        const newHighContainer = document.getElementById('newHighContainer');
+
+        highScoreEl.innerText = highScore;
+
+        // Input Controls State
+        const keys = { left: false, right: false };
+
+        // Entities
+        let paddle;
+        let balls = [];
+        let blocks = [];
+        let particles = [];
+        let powerups = [];
+        let lasers = [];
+
+        const POWERUP_TYPES = [
+            { id: 'WIDER', label: 'W', color: '#00f3ff' },
+            { id: 'MULTI', label: 'M', color: '#ff007f' },
+            { id: 'LASER', label: 'L', color: '#39ff14' },
+            { id: 'SUPER', label: 'S', color: '#ffe600' }
+        ];
+
+        class Paddle {
+            constructor() {
+                this.defaultWidth = 110;
+                this.width = this.defaultWidth;
+                this.height = 18;
+                this.x = (CANVAS_WIDTH - this.width) / 2;
+                this.y = CANVAS_HEIGHT - 60;
+                this.speed = 10;
+                this.hasLaser = false;
+                this.laserTimer = 0;
+                this.widerTimer = 0;
+            }
+
+            reset() {
+                this.width = this.defaultWidth;
+                this.x = (CANVAS_WIDTH - this.width) / 2;
+                this.hasLaser = false;
+                this.laserTimer = 0;
+                this.widerTimer = 0;
+            }
+
+            update() {
+                if (keys.left) this.x -= this.speed;
+                if (keys.right) this.x += this.speed;
+
+                // Clamp
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > CANVAS_WIDTH) this.x = CANVAS_WIDTH - this.width;
+
+                if (this.widerTimer > 0) {
+                    this.widerTimer--;
+                    if (this.widerTimer <= 0) this.width = this.defaultWidth;
+                }
+                if (this.laserTimer > 0) {
+                    this.laserTimer--;
+                    if (this.laserTimer <= 0) this.hasLaser = false;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.hasLaser ? '#39ff14' : '#00f3ff';
+
+                const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
+                if (this.hasLaser) {
+                    grad.addColorStop(0, '#39ff14');
+                    grad.addColorStop(1, '#006600');
+                } else {
+                    grad.addColorStop(0, '#00f3ff');
+                    grad.addColorStop(1, '#0055aa');
+                }
+
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.roundRect(this.x, this.y, this.width, this.height, 9);
+                ctx.fill();
+
+                if (this.hasLaser) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(this.x + 4, this.y - 6, 6, 6);
+                    ctx.fillRect(this.x + this.width - 10, this.y - 6, 6, 6);
+                }
+                ctx.restore();
+            }
+        }
+
+        class Ball {
+            constructor(x, y, vx, vy) {
+                this.x = x || CANVAS_WIDTH / 2;
+                this.y = y || CANVAS_HEIGHT - 90;
+                this.radius = 9;
+                this.vx = vx || (Math.random() > 0.5 ? 1 : -1) * 4.5;
+                this.vy = vy || -7;
+                this.isSuper = false;
+                this.superTimer = 0;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Wall Collisions
+                if (this.x - this.radius <= 0) {
+                    this.x = this.radius;
+                    this.vx *= -1;
+                    sound.playHitPaddle();
+                }
+                if (this.x + this.radius >= CANVAS_WIDTH) {
+                    this.x = CANVAS_WIDTH - this.radius;
+                    this.vx *= -1;
+                    sound.playHitPaddle();
+                }
+                if (this.y - this.radius <= 0) {
+                    this.y = this.radius;
+                    this.vy *= -1;
+                    sound.playHitPaddle();
+                }
+
+                if (this.superTimer > 0) {
+                    this.superTimer--;
+                    if (this.superTimer <= 0) this.isSuper = false;
+                }
+
+                // Trail Effect
+                if (Math.random() < 0.6) {
+                    particles.push(new Particle(
+                        this.x, this.y,
+                        (Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 0.5,
+                        this.isSuper ? '#ffe600' : '#00f3ff',
+                        this.radius * 0.7, 10
+                    ));
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = this.isSuper ? 20 : 12;
+                ctx.shadowColor = this.isSuper ? '#ffe600' : '#00f3ff';
+                ctx.fillStyle = this.isSuper ? '#ffe600' : '#ffffff';
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Block {
+            constructor(x, y, w, h, hp, color) {
+                this.x = x;
+                this.y = y;
+                this.width = w;
+                this.height = h;
+                this.maxHp = hp;
+                this.hp = hp;
+                this.color = color;
+            }
+
+            draw() {
+                ctx.save();
+                const alpha = this.hp / this.maxHp;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = 0.35 + alpha * 0.65;
+
+                ctx.beginPath();
+                ctx.roundRect(this.x, this.y, this.width, this.height, 5);
+                ctx.fill();
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.globalAlpha = alpha;
+                ctx.strokeRect(this.x + 2, this.y + 2, this.width - 4, this.height - 4);
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, vx, vy, color, size = 3, life = 25) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.size = size;
+                this.maxLife = life;
+                this.life = life;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life--;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Powerup {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.width = 26;
+                this.height = 26;
+                this.vy = 2.8;
+            }
+
+            update() { this.y += this.vy; }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = this.type.color;
+                ctx.fillStyle = this.type.color;
+
+                ctx.beginPath();
+                ctx.roundRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height, 6);
+                ctx.fill();
+
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 13px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.type.label, this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        class Laser {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 4;
+                this.height = 16;
+                this.vy = -12;
+            }
+
+            update() { this.y += this.vy; }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#39ff14';
+                ctx.fillStyle = '#39ff14';
+                ctx.fillRect(this.x - this.width/2, this.y, this.width, this.height);
+                ctx.restore();
+            }
+        }
+
+        // --- Core Helpers ---
+        function createParticles(x, y, color, count = 12) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 4 + 1;
+                particles.push(new Particle(
+                    x, y,
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed,
+                    color,
+                    Math.random() * 4 + 2,
+                    Math.floor(Math.random() * 15 + 15)
+                ));
+            }
+        }
+
+        function createStageBlocks(stageNum) {
+            blocks = [];
+            const rows = Math.min(4 + stageNum, 8);
+            const cols = 7; // Adjusted for mobile screen proportions
+            const padding = 8;
+            const offsetTop = 70;
+            const offsetLeft = 20;
+            const blockWidth = (CANVAS_WIDTH - (offsetLeft * 2) - (padding * (cols - 1))) / cols;
+            const blockHeight = 24;
+
+            const colors = ['#00f3ff', '#ff007f', '#ffe600', '#39ff14', '#b026ff'];
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if ((stageNum % 2 === 0) && (r + c) % 2 === 0) continue; // Pattern skip
+
+                    const hp = (r === 0 && stageNum > 1) ? 2 : 1;
+                    const color = colors[r % colors.length];
+                    const x = offsetLeft + c * (blockWidth + padding);
+                    const y = offsetTop + r * (blockHeight + padding);
+
+                    blocks.push(new Block(x, y, blockWidth, blockHeight, hp, color));
+                }
+            }
+        }
+
+        function updateLivesUI() {
+            livesEl.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                livesEl.innerHTML += '<i class="fa-solid fa-heart"></i>';
+            }
+        }
+
+        function resetBallAndPaddle() {
+            paddle.reset();
+            balls = [new Ball()];
+        }
+
+        function shootLaser() {
+            if (paddle.hasLaser) {
+                lasers.push(new Laser(paddle.x + 8, paddle.y));
+                lasers.push(new Laser(paddle.x + paddle.width - 8, paddle.y));
+                sound.playLaser();
+            }
+        }
+
+        // --- Collision Logic ---
+        function checkCollisions() {
+            // Ball & Paddle
+            balls.forEach(ball => {
+                if (ball.y + ball.radius >= paddle.y &&
+                    ball.y - ball.radius <= paddle.y + paddle.height &&
+                    ball.x >= paddle.x && ball.x <= paddle.x + paddle.width &&
+                    ball.vy > 0) {
+
+                    sound.playHitPaddle();
+                    ball.vy *= -1;
+
+                    const hitPoint = (ball.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
+                    ball.vx = hitPoint * 6.5;
+
+                    if (Math.abs(ball.vy) < 4.5) ball.vy = ball.vy < 0 ? -5.5 : 5.5;
+                }
+            });
+
+            // Ball & Blocks
+            balls.forEach(ball => {
+                for (let i = blocks.length - 1; i >= 0; i--) {
+                    const b = blocks[i];
+
+                    if (ball.x + ball.radius > b.x &&
+                        ball.x - ball.radius < b.x + b.width &&
+                        ball.y + ball.radius > b.y &&
+                        ball.y - ball.radius < b.y + b.height) {
+
+                        if (!ball.isSuper) {
+                            const prevX = ball.x - ball.vx;
+                            if (prevX <= b.x || prevX >= b.x + b.width) {
+                                ball.vx *= -1;
+                            } else {
+                                ball.vy *= -1;
+                            }
+                        }
+
+                        b.hp--;
+                        sound.playHitBlock(b.hp * 80);
+
+                        if (b.hp <= 0) {
+                            createParticles(b.x + b.width / 2, b.y + b.height / 2, b.color, 15);
+                            score += 100;
+                            scoreEl.innerText = score;
+
+                            if (Math.random() < 0.25) {
+                                const pType = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+                                powerups.push(new Powerup(b.x + b.width / 2, b.y + b.height / 2, pType));
+                            }
+
+                            blocks.splice(i, 1);
+                        } else {
+                            createParticles(ball.x, ball.y, b.color, 5);
+                        }
+                        break;
+                    }
+                }
+            });
+
+            // Laser & Blocks
+            for (let lIndex = lasers.length - 1; lIndex >= 0; lIndex--) {
+                const laser = lasers[lIndex];
+                for (let bIndex = blocks.length - 1; bIndex >= 0; bIndex--) {
+                    const b = blocks[bIndex];
+                    if (laser.x > b.x && laser.x < b.x + b.width &&
+                        laser.y > b.y && laser.y < b.y + b.height) {
+
+                        b.hp--;
+                        sound.playHitBlock(120);
+                        createParticles(laser.x, laser.y, '#39ff14', 8);
+
+                        if (b.hp <= 0) {
+                            score += 100;
+                            scoreEl.innerText = score;
+                            blocks.splice(bIndex, 1);
+                        }
+                        lasers.splice(lIndex, 1);
+                        break;
+                    }
+                }
+            }
+
+            // Powerup & Paddle
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                const p = powerups[i];
+                if (p.y + p.height / 2 >= paddle.y &&
+                    p.y - p.height / 2 <= paddle.y + paddle.height &&
+                    p.x >= paddle.x && p.x <= paddle.x + paddle.width) {
+
+                    sound.playPowerup();
+                    score += 50;
+                    scoreEl.innerText = score;
+
+                    if (p.type.id === 'WIDER') {
+                        paddle.width = paddle.defaultWidth * 1.4;
+                        paddle.widerTimer = 600;
+                    } else if (p.type.id === 'MULTI') {
+                        if (balls.length > 0) {
+                            const b = balls[0];
+                            balls.push(new Ball(b.x, b.y, b.vx + 2, -Math.abs(b.vy)));
+                            balls.push(new Ball(b.x, b.y, -b.vx - 2, -Math.abs(b.vy)));
+                        }
+                    } else if (p.type.id === 'LASER') {
+                        paddle.hasLaser = true;
+                        paddle.laserTimer = 500;
+                    } else if (p.type.id === 'SUPER') {
+                        balls.forEach(b => {
+                            b.isSuper = true;
+                            b.superTimer = 450;
+                        });
+                    }
+
+                    powerups.splice(i, 1);
+                } else if (p.y > CANVAS_HEIGHT) {
+                    powerups.splice(i, 1);
+                }
+            }
+        }
+
+        // --- Game Flow Control ---
+        function initGame() {
+            sound.init();
+            paddle = new Paddle();
+            score = 0;
+            lives = 3;
+            stage = 1;
+            isPaused = false;
+            scoreEl.innerText = score;
+            stageEl.innerText = stage;
+            updateLivesUI();
+
+            resetBallAndPaddle();
+            createStageBlocks(stage);
+
+            particles = [];
+            powerups = [];
+            lasers = [];
+
+            isGaming = true;
+            startOverlay.classList.add('hidden');
+            gameOverOverlay.classList.add('hidden');
+            pauseOverlay.classList.add('hidden');
+        }
+
+        function triggerGameOver(win = false) {
+            isGaming = false;
+            sound.playGameOver();
+
+            let isNewHigh = false;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('cyberbreakout_mobile_high', highScore);
+                highScoreEl.innerText = highScore;
+                isNewHigh = true;
+            }
+
+            gameOverTitle.innerText = win ? "STAGE CLEARED!" : "GAME OVER";
+            gameOverTitle.className = win ?
+                "font-orbitron text-3xl sm:text-4xl font-black mb-2 text-cyan-400 glow-cyan" :
+                "font-orbitron text-3xl sm:text-4xl font-black mb-2 text-red-500 glow-pink";
+
+            gameOverSub.innerText = win ? "ミッション完了！全セキュリティ突破！" : "システムダウン。再起動が必要です。";
+            finalScoreEl.innerText = score;
+            finalStageEl.innerText = stage;
+
+            if (isNewHigh) {
+                newHighContainer.classList.remove('hidden');
+            } else {
+                newHighContainer.classList.add('hidden');
+            }
+
+            gameOverOverlay.classList.remove('hidden');
+        }
+
+        function togglePause() {
+            if (!isGaming) return;
+            isPaused = !isPaused;
+            const pauseIcon = document.getElementById('pauseIcon');
+
+            if (isPaused) {
+                pauseOverlay.classList.remove('hidden');
+                pauseIcon.className = 'fa-solid fa-play';
+            } else {
+                pauseOverlay.classList.add('hidden');
+                pauseIcon.className = 'fa-solid fa-pause';
+            }
+        }
+
+        function update() {
+            if (!isGaming || isPaused) return;
+
+            paddle.update();
+
+            // Balls Update
+            for (let i = balls.length - 1; i >= 0; i--) {
+                const b = balls[i];
+                b.update();
+
+                if (b.y - b.radius > CANVAS_HEIGHT) {
+                    balls.splice(i, 1);
+                }
+            }
+
+            // Life lost
+            if (balls.length === 0) {
+                lives--;
+                updateLivesUI();
+                sound.playExplosion();
+
+                if (lives <= 0) {
+                    triggerGameOver(false);
+                    return;
+                } else {
+                    resetBallAndPaddle();
+                }
+            }
+
+            // Lasers Update
+            for (let i = lasers.length - 1; i >= 0; i--) {
+                lasers[i].update();
+                if (lasers[i].y < 0) lasers.splice(i, 1);
+            }
+
+            powerups.forEach(p => p.update());
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+
+            checkCollisions();
+
+            // Stage Clear Check
+            if (blocks.length === 0) {
+                stage++;
+                stageEl.innerText = stage;
+                sound.playPowerup();
+                createStageBlocks(stage);
+                resetBallAndPaddle();
+            }
+        }
+
+        function render() {
+            ctx.fillStyle = '#05050d';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Neon Grid Overlay
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.04)';
+            ctx.lineWidth = 1;
+            const gridSize = 35;
+            for (let x = 0; x < CANVAS_WIDTH; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, CANVAS_HEIGHT);
+                ctx.stroke();
+            }
+            for (let y = 0; y < CANVAS_HEIGHT; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(CANVAS_WIDTH, y);
+                ctx.stroke();
+            }
+
+            if (isGaming) {
+                paddle.draw();
+                balls.forEach(b => b.draw());
+                blocks.forEach(b => b.draw());
+                powerups.forEach(p => p.draw());
+                lasers.forEach(l => l.draw());
+                particles.forEach(p => p.draw());
+            }
+        }
+
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Touch & Pointer Event Controls ---
+        function setPaddlePosFromTouch(clientX) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = CANVAS_WIDTH / rect.width;
+            const canvasX = (clientX - rect.left) * scaleX;
+            paddle.x = canvasX - paddle.width / 2;
+        }
+
+        // Handle Direct Screen Swipe / Drag
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (!isGaming || isPaused) return;
+            if (e.touches && e.touches.length > 0) {
+                setPaddlePosFromTouch(e.touches[0].clientX);
+            }
+        }
+
+        function handleTouchStart(e) {
+            if (!isGaming || isPaused) return;
+            if (e.touches && e.touches.length > 0) {
+                setPaddlePosFromTouch(e.touches[0].clientX);
+                shootLaser();
+            }
+        }
+
+        // Attach listeners to canvas wrapper for better mobile hit-area
+        canvasWrapper.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvasWrapper.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+        // Mouse Controls fallback for desktop
+        canvasWrapper.addEventListener('mousemove', (e) => {
+            if (!isGaming || isPaused) return;
+            setPaddlePosFromTouch(e.clientX);
+        });
+
+        // Bottom Touch Buttons
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        const btnFire = document.getElementById('btnFire');
+
+        const bindTouchBtn = (btn, actionStart, actionEnd) => {
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); actionStart(); }, { passive: false });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); actionEnd(); }, { passive: false });
+            btn.addEventListener('mousedown', () => actionStart());
+            btn.addEventListener('mouseup', () => actionEnd());
+        };
+
+        bindTouchBtn(btnLeft, () => { keys.left = true; }, () => { keys.left = false; });
+        bindTouchBtn(btnRight, () => { keys.right = true; }, () => { keys.right = false; });
+        bindTouchBtn(btnFire, () => { shootLaser(); }, () => {});
+
+        // Keyboard Controls
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+            if (e.key === ' ' || e.key === 'ArrowUp') shootLaser();
+            if (e.key === 'p' || e.key === 'P') togglePause();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+        });
+
+        // UI Buttons
+        document.getElementById('startBtn').addEventListener('click', initGame);
+        document.getElementById('restartBtn').addEventListener('click', initGame);
+        document.getElementById('pauseBtn').addEventListener('click', togglePause);
+        document.getElementById('resumeBtn').addEventListener('click', togglePause);
+
+        // Sound Toggle
+        const soundToggleBtn = document.getElementById('soundToggleBtn');
+        const soundIcon = document.getElementById('soundIcon');
+        soundToggleBtn.addEventListener('click', () => {
+            sound.enabled = !sound.enabled;
+            if (sound.enabled) {
+                soundIcon.className = 'fa-solid fa-volume-high';
+                soundToggleBtn.classList.remove('text-red-400');
+            } else {
+                soundIcon.className = 'fa-solid fa-volume-xmark';
+                soundToggleBtn.classList.add('text-red-400');
+            }
+        });
+
+        // Window Onload Start
+        window.onload = () => {
+            paddle = new Paddle();
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
